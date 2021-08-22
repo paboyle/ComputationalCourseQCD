@@ -169,15 +169,16 @@
     \link{https://github.com/paboyle/Grid/blob/develop/Grid/algorithms/iterative/GeneralisedMinimalResidual.h}
     
     \begin{itemize}
-    \item Consider the orthonormal basis for the Krylov space: $x_n = \sum\limits_j=1^n c_j | v_j\rangle $
+    \item Consider the orthonormal basis for the Krylov space: $x_n = \sum\limits_{j=1}^n c_j | v_j\rangle $
+      \item GMRES minimises the Euclidean norm $|r|^2$ with respect to the coefficients $c_n$ where $|r\rangle = |b\rangle - c_j | A v_j\rangle$
     \item We know how to represent the matrix in this basis
     $$
         | A v_j \rangle =  \sum\limits_{i=1}^{j+1}  | v_i \rangle H_{ij}
     $$
-      \item GMRES minimises the Euclidean norm $|r|^2$ with respect to the coefficients $c_n$
-      \item Dense linear algebra in $H$ and $c_j$ perform the minimisation
-      \item This requires all $N$ vectors to be retained, and coefficients selected after $n$-iterations
-    \item GMRES(k) runs for $k$ iterations and then \emph{restarts} to limit storage
+        \item So this reduces to minimising $|\beta e_1 - H c |$, where $\beta = |b|$
+      \item Dense linear algebra (QR factorisation) in $H$ yields the minimisation
+      \item This requires all $N$ vectors to be retained, and coefficients selected \emph{after} $n$-iterations
+    \item GMRES(k) runs for $k$ iterations and then \emph{restarts} required to limit storage
     \item Often used in a preconditioner/smoother
     \end{itemize}
 
@@ -457,7 +458,10 @@ $$
 \link{https://github.com/paboyle/Grid/blob/develop/Grid/algorithms/iterative/ImplicitlyRestartedLanczos.h}
 \begin{itemize}
 \item We will not discuss Lanczos in detail: it is used to produce the lowest lying eigenvectors of the Dirac operator
-\item These can be handled exactly, and removed from the problem to eliminate critical slowing down
+\item Lanczos orthormal sequence hase been discussed, representation of matrix on this basis, diagonalised \& sort by eigenvalue... you get the idea
+\item Polynomial preconditioning: use chebyshev polynomials to suppress unwanted part of spectrum (univariate wiggles) - diverges outside this region.
+\item Compute eigenvalues of the polynomial, map back to eigenvalues of the original matrix.
+\item Low lying eigenvectors can now be handled exactly: remove from the problem to eliminate critical slowing down
 \item Deflation of low modes $G = \sum_i  \frac{|i\rangle\langle i|}{\lambda_i}  $ can be used as a guess.\\
 \begin{itemize}
 \item      These will not reenter the Krylov space other than through:
