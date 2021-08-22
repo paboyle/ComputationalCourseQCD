@@ -452,6 +452,12 @@ $$
 \begin{itemize}
 \item We will not discuss Lanczos in detail: it is used to produce the lowest lying eigenvectors of the Dirac operator
 \item These can be handled exactly, and removed from the problem to eliminate critical slowing down
+\item Deflation of low modes $G = \sum_i  \frac{|i\rangle\langle i|}{\lambda_i}  $ can be used as a guess.\\
+\begin{itemize}
+\item      These will not reenter the Krylov space other than through:
+\item a) Rounding errors
+\item b) Imprecision in the eigenvectors/eigenvalues
+\end{itemize}
 \end{itemize}
   \end{frame}
 
@@ -461,7 +467,12 @@ $$
 \begin{itemize}
 \item Write a conjugate gradients algorithm to invert the (massive) Laplacian
 \begin{itemize}
-\item Introduce a small mass $m^2$ to the Laplacian example in Lecture 1.
+\item Introduce a small mass $m^2$ to the Laplacian example in Lecture 1 to regulate the spectrum.
+\end{itemize}
+\href{https://github.com/paboyle/Grid/blob/develop/examples/Example_Laplacian_solver.cc}
+     {\color{blue} https://github.com/paboyle/Grid/blob/develop/examples/Example\_Laplacian\_solver.cc}
+\item Extension:
+\begin{itemize}
 \item Verify the results on the free field via Fourier methods
 \item Check gauge covariance
 \end{itemize}

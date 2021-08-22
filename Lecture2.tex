@@ -377,17 +377,6 @@ template<class Gimpl,class Field> class CovariantLaplacianStencil : public Spars
 \end{frame}
 
 
-\begin{frame}[fragile]\small\frametitle{ Exercise}
-
-\begin{itemize}
-\item Implement a stencil based adjoint representation Laplacian for SU(3).
-\begin{itemize}
-\item Check against the slow Cshift implementation: \link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/utils/CovariantLaplacian.h}
-\end{itemize}
-\end{itemize}
-
-\end{frame}
-
 
 \begin{frame}[fragile]\small\frametitle{Scalar propagator}
 
@@ -509,7 +498,43 @@ Example implementation: \link{https://github.com/paboyle/Grid/blob/develop/Grid/
       \end{column}
       \end{columns}
   \end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{ Exercise}
+
+\begin{itemize}
+\item Based on example 1, implement covariant Wuppertal smearing with one of the Laplacian operators 
+\begin{itemize}
+\item Negate the operator, so its eigenvalues are \emph{positive}
+\item Apply this to a kronecker delta function at the midpoint of the lattice (pokeSite)
+\item Output the smeared field to \verb1 std::cout 1
+\item Use grep and gnuplot to plot the profile as a function of $x$ and $y$
+\item \verb9 ./Example_Laplacian_smearing --grid 16.16.16.2 | grep ^.*,8,8,0 9
+\item Advanced: Use the Grid Chebyshev classes to implement a free $F(p^2)$ smearing and choose a form that gives a radial node
+\item Congratulations: you've invented a powerful new form of covariant Lattice smearing (!)
+\end{itemize}
+\item \emph{Only if necessary} peek at
+  \href{https://github.com/paboyle/Grid/blob/develop/examples/Example_Laplacian_smearing.cc}{\color{blue}https://github.com/paboyle/Grid/blob/develop/examples/Example\_Laplacian\_smearing.cc}
+\item The example solution also implements a form of $\theta(p^2)$ that allows to compare to Distillation smearing
+\begin{itemize}
+\item Satisfy yourself that Distillation tends to a point operator as the threshold for the $\theta-$function is increased
+\end{itemize}
+\end{itemize}
+
+\end{frame}
   
+\begin{frame}[fragile]\small\frametitle{ Advanced Exercise}
+
+\begin{itemize}
+\item Implement a stencil based adjoint representation Laplacian for SU(3).
+\begin{itemize}
+\item Check against the slow Cshift implementation: \link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/utils/CovariantLaplacian.h}
+\end{itemize}
+\item Send me the code: I promised Chulwoo Jung I would write it (!)
+\end{itemize}
+
+\end{frame}
+
 
 \end{document}
 
