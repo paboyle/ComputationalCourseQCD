@@ -1,0 +1,154 @@
+\documentclass[pdf,ps,8pt]{beamer}
+
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{bbold}
+\usepackage{cancel}
+\usepackage{slashed}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{textcomp}
+
+\usetheme{Singapore}
+
+\definecolor{palegray}{rgb}{0.82,0.822,0.82}
+\newcommand{\preliminary}{
+{ \rput{30}(7,-4.0){\fontsize{40}{40}\selectfont {\color{palegray}Preliminary Preliminary}} }
+}
+
+\newcommand{\textapprox}{\raisebox{0.5ex}{\texttildelow}}
+
+\newcommand{\miniscule}{\fontsize{3pt}{4pt}\selectfont}
+
+\def\MSbar{$\overline{\mathrm{MS}}$}
+\def\gev{\,\mathrm{GeV}}
+\def\mev{\,\mathrm{MeV}}
+\def\fm{\,\mathrm{fm}}
+\def\SU{\mathrm{SU}}
+\def\su#1#2{\SU(#1)_\mathrm{#2}}
+\def\rpisq{\langle r_\pi^2\rangle}
+% final values
+\def\rpisqsim{0.38(4)}  % pole fit for 330 MeV pion
+\def\rpisqsu2sim{0.354(31)}  % su2 fit for 330 MeV pion
+\def\rpisqsimlong{0.382(42)}
+\def\rpisqphys{0.418(31)} % SU(2) chi extrap
+\def\rpisqphyslong{0.418(31)}
+\def\lsixr{-0.0093(10)} % SU(2)
+\def\Lniner{0.0031(6)}  % SU(3)
+
+\newcommand{\chpt}{\chi^{\rm PT}}
+\newcommand{\tchpt}{$\chi^{\rm PT}$}
+\newcommand{\tchptthree}{$\chi^{\rm PT}_3$}
+\newcommand{\tchpttwo}{$\chi^{\rm PT}_2$}
+
+\newcommand{\xiav}{\langle\,\xi\,\rangle}
+\newcommand{\xisqav}{\langle\,\xi^2\,\rangle}
+
+
+\newcommand{\mD}{\left(\begin{array}{cc} \DO & \Dd \\  \Ddb&\DOb \end{array} \right)}
+
+\newcommand{\Ob}{\bar{\Omega}}
+
+\newcommand{\DO}{D_\Omega}
+\newcommand{\Dd}{D_\partial}
+\newcommand{\DOi}{D_\Omega^{-1}}
+\newcommand{\DOid}{D_\Omega^{-\dagger}}
+\newcommand{\Pd} {\mathbb{P}_\partial}
+\newcommand{\PO} {\mathbb{P}_\Omega}
+
+\newcommand{\DOb}{D_{\bar{\Omega}}}
+\newcommand{\Ddb}{D_{\bar{\partial}}}
+\newcommand{\DObi}{D_{\bar{\Omega}}^{-1}}
+\newcommand{\DObid}{D_{\bar{\Omega}}^{-\dagger}}
+\newcommand{\Pdb}{\mathbb{P}_{\bar{\partial}}}
+\newcommand{\POb} {\mathbb{P}_{\bar\Omega}}
+
+\newcommand{\Phidb}{\mathbb{\phi}_{\bar{\partial}}}
+\newcommand{\etadb}{\mathbb{\eta}_{\bar{\partial}}}
+
+\newcommand{\hDO}{\hat D_\Omega}
+\newcommand{\hDd}{\hat D_\partial}
+\newcommand{\hDOi}{\hat D_\Omega^{-1}}
+\newcommand{\hPd} {\hat{\mathbb{P}}_\partial}
+
+\newcommand{\hDOb}{\hat D_{\bar{\Omega}}}
+\newcommand{\hDdb}{\hat D_{\bar{\partial}}}
+\newcommand{\hDObi}{\hat D_{\bar{\Omega}}^{-1}}
+\newcommand{\hPdb}{\hat{\mathbb{P}}_{\bar{\partial}}}
+
+\newcommand{\mul}[1]{\left(\begin{array}{cc}#1 & 0 \\ 0& 0\end{array}\right)}
+\newcommand{\mur}[1]{\left(\begin{array}{cc}0  & #1\\ 0& 0\end{array}\right)}
+\newcommand{\mll}[1]{\left(\begin{array}{cc}0  & 0 \\ #1 & 0\end{array}\right)}
+\newcommand{\mlr}[1]{\left(\begin{array}{cc}0  & 0 \\ 0& #1\end{array}\right)}
+
+\newcommand{\mDO}{\mul{ \DO}}
+\newcommand{\mDd}{\mur{ \Dd}}
+\newcommand{\mDOi}{\mul{\DOi}}
+\newcommand{\mPd} {\mlr{\Pd}}
+
+\newcommand{\mDOb}{\mlr{\DOb}}
+\newcommand{\mDdb}{\mll{\Ddb}}
+\newcommand{\mDObi}{\mlr{\DObi}}
+\newcommand{\mPdb}{\mul{\Pdb}}
+\newcommand{\rmod}{\mathrm{mod}}
+\newcommand{\rdiv}{\mathrm{div}}
+
+\newcommand{\link}[1]{\href{#1}{ {\color{blue} #1} }}
+
+\beamertemplatenavigationsymbolsempty
+\begin{document}
+
+\begin{frame}[fragile]\small\frametitle{  Computational Methods (practice) -  Lecture 5    }
+
+  \begin{center}
+ 
+  {\color{red} Peter Boyle} (BNL, Edinburgh)
+
+  \begin{itemize}
+  \item Fermion actions 
+  \item Sources and hadronic correlation functions
+  \item Meson two point functions
+  \item Final words
+  \end{itemize}
+
+\end{center}  
+
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Fermion actions }
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Sources and hadronic correlation functions }
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Meson two point functions }
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Meson three point functions }
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Ward identities }
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Final words }
+  \begin{itemize}
+  \item Aims
+  \begin{itemize}
+  \item convince you that LQCD software can be elegant, portable and fast
+  \item convince you that algorithms can be easy to implement
+  \item convince you that code can be elegant, portable and fast
+  \item convince you to get your hands dirty!
+  \item draw connections between a sample of the core algorithms \& methods of LQCD
+  \item keep the exposition simple while still covering the depth
+  \end{itemize}
+  \item Please provide feedback: what worked and what didn't
+  \item I hope you enjoyed the course
+  \end{itemize}
+\end{frame}
+
+
+\end{document}
+
+
+
