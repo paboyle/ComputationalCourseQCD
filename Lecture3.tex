@@ -136,24 +136,8 @@
   \item Different algorithms invoke different rules for selecting these coefficients...\\ ...and have different storage requirements
   \end{itemize}
   \end{frame}
-  \begin{frame}[fragile]\small\frametitle{ GMRES}
 
-    \link{https://github.com/paboyle/Grid/blob/develop/Grid/algorithms/iterative/GeneralisedMinimalResidual.h}
-    
-    \begin{itemize}
-    \item Consider $\psi = (c_n M^n) b$ in the Krylov space
-    \item GMRES minimises the Euclidean norm $|r|^2$ with respect to the coefficients $c_n$
-    \item Matrix elements are $c_m^\ast c_n \langle M^{m+1} b |M^{n+1} b\rangle$
-    \item This requires all $N$ vectors to be retained, and coefficients selected after dense matrix algebra to determine $c_m$
-    \item GMRES(k) runs for $k$ iterations and then \emph{restarts} to limit storage
-    \item Often used in a preconditioner/smoother
-    \end{itemize}
-
-    \href{https://en.wikipedia.org/wiki/Generalized_minimal_residual_method}{{\color{blue}https://en.wikipedia.org/wiki/Generalized\_minimal\_residual\_method}}
-
-    
-  \end{frame}
-  \begin{frame}[fragile]\small\frametitle{ Lanczos orthogonal sequence}
+  \begin{frame}[fragile]\small\frametitle{ Lanczos/Arnoldi orthogonal sequence}
 
     \link{http://people.inf.ethz.ch/arbenz/ewp/Lnotes/chapter10.pdf}
     
@@ -175,9 +159,31 @@
       \item The ``Householder matrix'' H is tridiagonal when $A$ has Hermitian symmetry and an orthonormal basis for the Krylov space
              is mapped out with a three term recurrence relation.\\
       \item{ \bf Removes large storage requirements}
-      \item Can use this basis to build solutions $\Rightarrow$ Conjugate Gradients
+      \item Can use this basis to build solutions $\Rightarrow$ Conjugate Gradients \& GMRES
       \end{itemize}
 
+  \end{frame}
+
+  \begin{frame}[fragile]\small\frametitle{ GMRES}
+
+    \link{https://github.com/paboyle/Grid/blob/develop/Grid/algorithms/iterative/GeneralisedMinimalResidual.h}
+    
+    \begin{itemize}
+    \item Consider the orthonormal basis for the Krylov space: $x_n = \sum\limits_j=1^n c_j | v_j\rangle $
+    \item We know how to represent the matrix in this basis
+    $$
+        | A v_j \rangle =  \sum\limits_{i=1}^{j+1}  | v_i \rangle H_{ij}
+    $$
+      \item GMRES minimises the Euclidean norm $|r|^2$ with respect to the coefficients $c_n$
+      \item Dense linear algebra in $H$ and $c_j$ perform the minimisation
+      \item This requires all $N$ vectors to be retained, and coefficients selected after $n$-iterations
+    \item GMRES(k) runs for $k$ iterations and then \emph{restarts} to limit storage
+    \item Often used in a preconditioner/smoother
+    \end{itemize}
+
+    \href{https://en.wikipedia.org/wiki/Generalized_minimal_residual_method}{{\color{blue}https://en.wikipedia.org/wiki/Generalized\_minimal\_residual\_method}}
+
+    
   \end{frame}
   \begin{frame}[fragile]\small\frametitle{ Conjugate Gradients}
     \href{https://en.wikipedia.org/wiki/Conjugate_gradient_method}{{\color{blue}https://en.wikipedia.org/wiki/Conjugate\_gradient\_method}}

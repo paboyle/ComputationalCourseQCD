@@ -217,7 +217,7 @@
 
 \begin{frame}[fragile]\small\frametitle{ How do you programme for multiple offload APIs?}
   \begin{itemize}
-  \item Capture loop bodies in a (variadic) macro
+  \item Capture loop bodies in a (variadic) macro: abstract the interface to offload
   \begin{itemize}
     \item Here variadic = ``comma safe''
   \end{itemize}
@@ -244,10 +244,10 @@
 
   \begin{center}
     \begin{itemize}
-    \item  Software convention:
     \begin{itemize}
-    \item must obtain a \emph{view} of an object for host/acccelerator from software cache manager - returns pointer to use
-    \item triggers data motion as required
+    \item Must obtain a \emph{view} of an object for host/acccelerator from software cache manager - returns pointer to use
+    \item Memory manager triggers data motion if required
+    \item Configure option: --enable-unified=yes/no
     \end{itemize}
     \end{itemize}
   \end{center}
@@ -510,8 +510,10 @@ Example implementation: \link{https://github.com/paboyle/Grid/blob/develop/Grid/
 \item Output the smeared field to \verb1 std::cout 1
 \item Use grep and gnuplot to plot the profile as a function of $x$ and $y$
 \item \verb9 ./Example_Laplacian_smearing --grid 16.16.16.2 | grep ^.*,8,8,0 9
+  \end{itemize}
 \item Advanced: Use the Grid Chebyshev classes to implement a free $F(p^2)$ smearing and choose a form that gives a radial node
-\item Congratulations: you've invented a powerful new form of covariant Lattice smearing (!)
+  \begin{itemize}
+  \item Congratulations: you've invented a powerful new form of covariant Lattice smearing (!)
 \end{itemize}
 \item \emph{Only if necessary} peek at
   \href{https://github.com/paboyle/Grid/blob/develop/examples/Example_Laplacian_smearing.cc}{\color{blue}https://github.com/paboyle/Grid/blob/develop/examples/Example\_Laplacian\_smearing.cc}
@@ -519,6 +521,10 @@ Example implementation: \link{https://github.com/paboyle/Grid/blob/develop/Grid/
 \begin{itemize}
 \item Satisfy yourself that Distillation tends to a point operator as the threshold for the $\theta-$function is increased
 \end{itemize}
+\item Strongly encourage you to \emph{play with codes} coming at things from different directions. \\
+  {\bf Everything has to work out as you expect (after a little thought!) or the code is wrong}. \\
+  The experience gained will bring invaluable debug skills and more rapid development capability.
+\item If it doesn't work in the free field where we know the answers, it won't work in the interacting case!
 \end{itemize}
 
 \end{frame}
