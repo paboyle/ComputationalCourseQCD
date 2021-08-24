@@ -18,6 +18,8 @@
 }
 
 \newcommand{\textapprox}{\raisebox{0.5ex}{\texttildelow}}
+\newcommand{\beq}{\begin{equation*}}
+\newcommand{\eeq}{\end{equation*}}
 
 \newcommand{\miniscule}{\fontsize{3pt}{4pt}\selectfont}
 
@@ -114,8 +116,8 @@
   \item Preconditioning
   \item Red black preconditioning
   \item Checkerboarded implementation
-  \item Multigrid preconditioning
   \item Eigensolvers and Deflation
+  \item Multigrid preconditioning
   \end{itemize}
 
 \end{center}  
@@ -490,7 +492,149 @@ $$
 
 \end{frame}
 
+\begin{frame}[fragile]\small\frametitle{Multigrid : how it works}
 
+\begin{itemize}
+\item Project to low dimensional basis that captures the low mode space
+\item Represent the original matrix in this truncated basis
+\item Inverse of this truncated representation corrects the current solution
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.5\textwidth]{iterative-solutions-multigrid-v-web.png}
+\includegraphics[width=0.3\textwidth]{Finished-8x8-board-2.jpg}
+\end{center}
+
+\begin{tabular}{c|cccc}
+ & Fine & Coarse & CoarseCoarse & Evecs\\
+\hline
+$\lambda_{\rm min}$ & 1.0e-6 &  1.0e-6 &  1.0e-6  &  1.0e-6  \\
+$\lambda_{\rm max}$ & 60     &  11     & 5.0      &  4.0e-3 
+\end{tabular}
+
+\begin{itemize}
+\item Improve the condition number by lowering the cut-off as you go coarser
+\item Arguably a surface to volume suppression of the high modes as you block
+\item Smoother step helps cheaply wipe out the effects while preserving the low mode element of coarse
+correction
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{Multigrid preconditioners}
+
+Multigrid is introduced as a \emph{Preconditioner}
+
+Low mode subspace vectors $\phi$ generated in some way: tried
+\begin{itemize}
+\item Inverse iteration (c.f. Luscher)
+\item Lanczos vectors
+\item Chebyshev filters
+\end{itemize}
+
+\beq
+\phi^b_k(x) = \left\{ \begin{array}{ccc} 
+  \phi_k(x) &;& x\in b\\
+  0 &;& x \not\in b
+\end{array}
+\right.
+\eeq 
+\beq{\rm span} \{ \phi_k\}\subset 
+{\rm span} \{ \phi_k^b\} .\eeq
+\beq
+P_S =  \sum_{k,b} |\phi^b_k\rangle \langle \phi^b_k | \quad\quad ; \quad\quad P_{\bar{S}} = 1 - P_S 
+\eeq
+\beq
+M=
+\left(
+\begin{array}{cc}
+M_{\bar{S}\bar{S}} & M_{S\bar{S}}\\
+M_{\bar{S}S} &M_{SS}
+\end{array}
+\right)=
+\left(
+\begin{array}{cc}
+P_{\bar{S}} M P_{\bar{S}}  &  P_S M P_{\bar{S}}\\
+ P_{\bar{S}} M P_S &   P_S M P_S
+\end{array}
+\right)
+\eeq
+We can represent the matrix $M$ exactly on this subspace by computing its matrix elements, 
+known as the \emph{little Dirac operator} (coarse grid matrix in multi-grid)
+\beq
+A^{ab}_{jk} = \langle \phi^a_j| M | \phi^b_k\rangle
+\quad\quad ; \quad\quad
+(M_{SS}) = A_{ij}^{ab} |\phi_i^a\rangle \langle \phi_j^b |.
+\eeq
+the subspace inverse can be solved by Krylov methods and is:
+\beq
+Q =
+\left( \begin{array}{cc}
+0 & 0 \\ 0 & M_{SS}^{-1}
+\end{array} \right) 
+\quad\quad ; \quad\quad
+M_{SS}^{-1} = (A^{-1})^{ab}_{ij} |\phi^a_i\rangle \langle \phi^b_j |
+\eeq
+
+It is important to note that $A$ inherits a sparse structure from $M$ because well separated blocks do \emph{not} connect through $M$.
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Multigrid preconditioners}
+
+Equivalence of a sequence of multigrid correction steps to a preconditioner can be seen if consider the $V_{11}$
+with a pre-smoother (S), coarse correction (Q), and post-smoother (S) in sequence,
+\begin{eqnarray}
+x_1 &=& x_0 + S r_0 \\
+x_2 &=& x_1 + Q r_1 \\
+x_3 &=& x_2 + S r_2 .
+\end{eqnarray}
+Substitute and reduce the final update in terms of $r_0 = b - M x_0$ and $x_0$,
+\begin{eqnarray}
+  r_1 &=& b-M x_1 = r_0 - M S r_0 \\
+  r_2 &=& b-M x_2 = r_0 - M S r_0  - M Q r_0 + M Q M S r_0 .
+\end{eqnarray}
+The final update sequence is then,
+\begin{eqnarray}
+  x_3 &=& x_0 + \left[ S (1 - MQ ) + Q + (1 - QM) S  + S( M Q M - M) S  \right]r_0\\
+      &=& x_0 + \left[ S P_L + Q + P_R S  + S P_L M S  \right]r_0 .
+\end{eqnarray}
+This $V(1,1)$ multigrid error cycle suggests the adoption of the matrix,
+\beq
+\left[ S P_L + Q + P_R S  + S P_L M S  \right]
+\eeq
+applied to the current residual as a preconditioner in an outer Krylov solver, with its implementation
+being as the above sequence of error correction steps based on the current residual $r_0$ as input.
+
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Domain Wall Multigrid}
+
+  \small
+  \begin{columns}
+  \begin{column}{0.6\textwidth}
+  \begin{itemize} 
+  \item Preprint: https://arxiv.org/pdf/2103.05034.pdf
+  \item Spectrum of DWF makes coarsening nearest neighbour operator \emph{hard}
+  \begin{itemize} 
+  \item Polynomial approximation to $\frac{1}{z}$ in region of complex plane enclosing origin
+  \item Typically solve normal equations on positive definite $M^\dagger M$
+  \item Nearest neighbour coarsenings of $\gamma_5 R_5 D_{dwf}$ (Herm, indefinite)
+    \end{itemize}
+  \item Novel chebyshev polynomial setup of multigrid
+  \item Result: \\Set up and solve twice $D_{dwf}$ faster than red-black CG
+  \item HMC focus; use compressed Lanczos for valence analysis
+  \end{itemize}
+
+\end{column}
+\begin{column}{0.4\textwidth}
+
+  \includegraphics[width=0.8\textwidth]{HDCR.pdf}
+  \includegraphics[width=0.8\textwidth]{DWF_evalues.pdf}
+  \includegraphics[width=0.8\textwidth]{cheby.pdf}
+
+\end{column}
+\end{columns}
+\end{frame}
 
 
 \end{document}
