@@ -338,7 +338,6 @@ template<class Gimpl,class Field> class CovariantLaplacianStencil : public Spars
     // Arithmetic expressions
     auto st = Stencil.View(AcceleratorRead);
     auto buf = st.CommBuf();
-    StencilEntry *SE;
 
     autoView( in     , _in    , AcceleratorRead);
     autoView( out    , _out   , AcceleratorWrite);
@@ -352,6 +351,8 @@ template<class Gimpl,class Field> class CovariantLaplacianStencil : public Spars
     const uint64_t NN = grid->oSites();
     accelerator_for( ss, NN, Nsimd, {
 
+        StencilEntry *SE;
+        const int lane=acceleratorSIMTlane(Nsimd);
         calcObj chi, res;
         calcLink UU;
 
