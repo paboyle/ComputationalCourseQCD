@@ -455,15 +455,20 @@ $$
   \begin{frame}[fragile]\small\frametitle{ Eigensolvers}
 \begin{itemize}
 \item   The Lanczos sequence can also be used to solve for eigenvectors, known as the Lanczos algorithm.
+\item   For a Hermitian matrix the Householder matrix is tridiagonal and represents the matrix $A$ within the Lanczos basis
+$$
+H_{ij} = T_{ij} = \langle v_i | A | v_j \rangle
+$$
+\item   Diagonalising this (small) tridiagonal matrix tells us the basis rotation that maximally diagonalises the matrix A
+\item   Keeping the lowest $N$ and repeating leads to restarted Lanczos
 \item   Grid has a Chebyshev polynomial preconditioned Lanczos algorithm:
 \end{itemize}
 \link{https://github.com/paboyle/Grid/blob/develop/Grid/algorithms/iterative/ImplicitlyRestartedLanczos.h}
 \begin{itemize}
-\item We will not discuss Lanczos in detail: it is used to produce the lowest lying eigenvectors of the Dirac operator
-\item Lanczos orthormal sequence hase been discussed, representation of matrix on this basis, diagonalised \& sort by eigenvalue... you get the idea
-\item Polynomial preconditioning: use chebyshev polynomials to suppress unwanted part of spectrum (univariate wiggles) - diverges outside this region.
-\item Compute eigenvalues of the polynomial, map back to eigenvalues of the original matrix.
-\item Low lying eigenvectors can now be handled exactly: remove from the problem to eliminate critical slowing down
+\item Lanczos is used to produce the lowest lying eigenvectors of the Dirac operator
+\item Polynomial preconditioning: chebyshev polynomials suppress unwanted part of spectrum (univariate wiggles) - diverges outside this region.
+\item Compute eigenvectors of the polynomial, map back to eigenvalues of the original matrix.
+\item Why? Low lying eigenvectors can now be handled exactly: remove from the problem to eliminate critical slowing down
 \item Deflation of low modes $G = \sum_i  \frac{|i\rangle\langle i|}{\lambda_i}  $ can be used as a guess.\\
 \begin{itemize}
 \item      These will not reenter the Krylov space other than through:
@@ -481,8 +486,10 @@ $$
 \begin{itemize}
 \item Introduce a small mass $m^2$ to the Laplacian example in Lecture 1 to regulate the spectrum.
 \end{itemize}
+\item Example Solution: \emph{strongly} suggest you write your own solution.
 \href{https://github.com/paboyle/Grid/blob/develop/examples/Example_Laplacian_solver.cc}
      {\color{blue} https://github.com/paboyle/Grid/blob/develop/examples/Example\_Laplacian\_solver.cc}
+
 \item Extension:
 \begin{itemize}
 \item Verify the results on the free field via Fourier methods
@@ -492,33 +499,6 @@ $$
 
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{Multigrid : how it works}
-
-\begin{itemize}
-\item Project to low dimensional basis that captures the low mode space
-\item Represent the original matrix in this truncated basis
-\item Inverse of this truncated representation corrects the current solution
-\end{itemize}
-\begin{center}
-\includegraphics[width=0.5\textwidth]{iterative-solutions-multigrid-v-web.png}
-\includegraphics[width=0.3\textwidth]{Finished-8x8-board-2.jpg}
-\end{center}
-
-\begin{tabular}{c|cccc}
- & Fine & Coarse & CoarseCoarse & Evecs\\
-\hline
-$\lambda_{\rm min}$ & 1.0e-6 &  1.0e-6 &  1.0e-6  &  1.0e-6  \\
-$\lambda_{\rm max}$ & 60     &  11     & 5.0      &  4.0e-3 
-\end{tabular}
-
-\begin{itemize}
-\item Improve the condition number by lowering the cut-off as you go coarser
-\item Arguably a surface to volume suppression of the high modes as you block
-\item Smoother step helps cheaply wipe out the effects while preserving the low mode element of coarse
-correction
-\end{itemize}
-
-\end{frame}
 
 
 \begin{frame}[fragile]\small\frametitle{Multigrid preconditioners}
@@ -606,6 +586,35 @@ applied to the current residual as a preconditioner in an outer Krylov solver, w
 being as the above sequence of error correction steps based on the current residual $r_0$ as input.
 
 \end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Multigrid : how it works}
+
+\begin{itemize}
+\item Project to low dimensional basis that captures the low mode space
+\item Represent the original matrix in this truncated basis
+\item Inverse of this truncated representation corrects the current solution
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.5\textwidth]{iterative-solutions-multigrid-v-web.png}
+\includegraphics[width=0.3\textwidth]{Finished-8x8-board-2.jpg}
+\end{center}
+
+\begin{tabular}{c|cccc}
+ & Fine & Coarse & CoarseCoarse & Evecs\\
+\hline
+$\lambda_{\rm min}$ & 1.0e-6 &  1.0e-6 &  1.0e-6  &  1.0e-6  \\
+$\lambda_{\rm max}$ & 60     &  11     & 5.0      &  4.0e-3 
+\end{tabular}
+
+\begin{itemize}
+\item Improve the condition number by lowering the cut-off as you go coarser
+\item Arguably a surface to volume suppression of the high modes as you block
+\item Smoother step helps cheaply wipe out the effects while preserving the low mode element of coarse
+correction
+\end{itemize}
+
+\end{frame}
+
 
 \begin{frame}[fragile]\small\frametitle{Domain Wall Multigrid}
 
