@@ -131,8 +131,8 @@
   $$
   \langle f \rangle = \frac{1}{N}\sum\limits_i \frac{f(x_i)}{P(x_i)}
   $$
-\item If $|f(x_i)| \propto P(x_i)$ this may converge better. \\
-      NB: analogy to removing bias from fixing machine learned MC integrators\\
+\item If $|f(x_i)| \propto P(x_i)$ this may converge better.
+
 \item Variance reduction: if $\tilde{f}$ is a good, cheap approximation for $f$
   $$
   \langle f \rangle = \frac{1}{N\times M}\sum\limits_i \frac{\tilde{f}(x_i)}{P(x_i)}
@@ -180,7 +180,7 @@ $$
 $$
 P_{eq}(X^\prime) = \sum\limits_X P_{eq}(X) M(X \to X^\prime) 
 $$
-\item An ergodic update satisfying this \emph{and} is a contration mapping and 
+\item An ergodic update satisfying this \emph{and} is a contration mapping leads to
       Markov transitions converge on the desired equilibrium.
   \end{itemize}
 (Clear pedagogical review: Anthony Kennedy Nara lectures 2006)
@@ -221,9 +221,6 @@ $$
 \begin{center}
   \fbox{Basis of most Markov Chain Monte Carlo}
 \end{center}
-\begin{itemize}
-\item Aspects of this might be of interest to the numerical integration / ML / journal club (?)
-\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]\small\frametitle{QCD path integral}
@@ -271,31 +268,37 @@ $$
   $$
   H= \frac{\pi^2}{2}+S_G[U]+\phi^\ast (M^\dag M)^{-1} \phi
   $$
-  $$\dot{U} = i \pi U \quad\quad;\quad\quad i \dot \pi = ( U \nabla_U S)_{TA}$$
+  $$\dot{U} = i \pi U \quad\quad;\quad\quad i \dot \pi = - ( U \nabla_U S)_{TA}$$
 \item {\color{red} Must invert $M^\dagger M$ at each timestep of evolution in MD force }
 $$\delta (M^\dag M)^{-1} = -  (M^\dag M)^{-1} [(\delta M^\dag) M + M (\delta M) ] (M^\dag M)^{-1}$$
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{Observables}
+\begin{frame}[fragile]\small\frametitle{Force terms \& conventions }
 
-Importance sampling has reduced:
-$$
-\langle {\cal O} \rangle = \frac{1}{Z} \int_U e^{-S_G[U]} {\cal O}(U) dU  \to \frac{1}{N} \sum\limits_i {\cal O}(U_i) 
-$$
-\begin{itemize}
-\item Zero momentum pion, kaon or B meson two point function
+  Derive from:
   $$
-  \sum\limits_x \langle \bar u \gamma_0 \gamma_5 d (x,t) \bar d \gamma_0 \gamma_5 u (0,0) \rangle
-    = \frac{1}{N}\sum_i  {\rm trace}  \{ \gamma_0 \gamma_5 M^{-1}_d(x,t;0,0)\gamma_0 \gamma_5 M^{-1}_u(0,0;x,t) \}
-    $$
-\item Euclidean space $\propto A e^{- m t} $
-\item Tune bare mass until interacting meson mass is correct, prefactor gives pion, kaon, B meson decay constant
-\item etc.. 
-\end{itemize}
-  
+  \dot{H} = 0 = \pi \left[ \dot \pi + i  U \cdot \nabla_U S_{TA} \right]
+  $$
+  \begin{itemize}
+   \item Define \emph{force} as the rate of change of momentum and is calculated by differentiating
+     action with respect to each element of each link (and multiplying by $U_\mu$ ; leaving untraced).
+   \item Grid ``derivative'' functions have some notable conventions. These simplify code but make somewhat non-obvious
+   \item All code bases I have read have such quirks(!)
+  \begin{enumerate}
+     \item $p_\mu = i p^a \tau^a $, removes factor of $i$ in exponentiation
+     \item Real actions (which we need for importance sampling) depend on $U$ and $U^\dagger$ in a symmetric way.
+     \item ``really'' should calculate $dS/dU$ and $dS/dU^\dagger$ but this is a factor of two.
+     \item ``actually'' calculate $dS/dU$ and take the traceless anti-hermitian part: leaves an implicit factor of two in force included in integrator.
+  \end{enumerate}
+  \item Finite timestep of U is performed in the Lie algebra: $U^\prime = e^{i \pi dt} U$, keeping U on the group manifold
+  \item Force terms reduce to simple application of the product and chain rule, bearing in mind the rules of matrix differentiation.
+  \item Code is typically pretty well commented and self documenting
+  \end{itemize}
+
 \end{frame}
 
+  
 \begin{frame}[fragile]\small\frametitle{ Pseudofermion options }
 
 \link{https://github.com/paboyle/Grid/tree/develop/Grid/qcd/action/pseudofermion}
@@ -344,12 +347,217 @@ $$
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]\small\frametitle{ Pseudofermion code example }
+
+  \link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/action/pseudofermion/TwoFlavourRatio.h}
+  {  \tiny
+\begin{verbatim}
+      FermionOperator<Impl> & NumOp;// the basic operator
+      FermionOperator<Impl> & DenOp;// the basic operator
+
+      OperatorFunction<FermionField> &DerivativeSolver;
+      OperatorFunction<FermionField> &ActionSolver;
+      OperatorFunction<FermionField> &HeatbathSolver;
+
+      FermionField PhiOdd;   // the pseudo fermion field for this trajectory
+      FermionField PhiEven;  // the pseudo fermion field for this trajectory
+  \end{verbatim}
+    }
+\end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{ Pseudofermion code example }
+\link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/action/pseudofermion/TwoFlavourRatio.h}
+  {  \tiny
+\begin{verbatim}
+  //////////////////////////////////////////////////////
+  // S = phi^dag V (Mdag M)^-1 Vdag phi
+  //////////////////////////////////////////////////////
+  virtual RealD S(const GaugeField &U) {
+
+    NumOp.ImportGauge(U);
+    DenOp.ImportGauge(U);
+
+    FermionField X(NumOp.FermionGrid());
+    FermionField Y(NumOp.FermionGrid());
+	
+    MdagMLinearOperator<FermionOperator<Impl> ,FermionField> MdagMOp(DenOp);
+
+    NumOp.Mdag(Phi,Y);              // Y= Vdag phi
+    X=Zero();
+    ActionSolver(MdagMOp,Y,X);      // X= (MdagM)^-1 Vdag phi
+    DenOp.M(X,Y);                  // Y=  Mdag^-1 Vdag phi
+
+    RealD action = norm2(Y);
+
+    return action;
+  };
+\end{verbatim}
+}
+\end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{ Pseudofermion code example }
+\link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/action/pseudofermion/TwoFlavourRatio.h}
+  {  \tiny
+\begin{verbatim}
+  //////////////////////////////////////////////////////
+  // dS/du = phi^dag dV (Mdag M)^-1 V^dag  phi
+  //       - phi^dag V (Mdag M)^-1 [ Mdag dM + dMdag M ]  (Mdag M)^-1 V^dag  phi
+  //       + phi^dag V (Mdag M)^-1 dV^dag  phi
+  //////////////////////////////////////////////////////
+  virtual void deriv(const GaugeField &U,GaugeField & dSdU) {
+
+    NumOp.ImportGauge(U);
+    DenOp.ImportGauge(U);
+
+    MdagMLinearOperator<FermionOperator<Impl> ,FermionField> MdagMOp(DenOp);
+
+    FermionField  X(NumOp.FermionGrid());
+    FermionField  Y(NumOp.FermionGrid());
+    GaugeField   force(NumOp.GaugeGrid());	
+
+    //Y=Vdag phi
+    //X = (Mdag M)^-1 V^dag phi
+    //Y = (Mdag)^-1 V^dag  phi
+    NumOp.Mdag(Phi,Y);              // Y= Vdag phi
+    X=Zero();
+    DerivativeSolver(MdagMOp,Y,X);      // X= (MdagM)^-1 Vdag phi
+    DenOp.M(X,Y);                  // Y=  Mdag^-1 Vdag phi
+
+    // phi^dag V (Mdag M)^-1 dV^dag  phi
+    NumOp.MDeriv(force , X, Phi, DaggerYes );  dSdU=force;
+  
+    // phi^dag dV (Mdag M)^-1 V^dag  phi
+    NumOp.MDeriv(force , Phi, X ,DaggerNo  );  dSdU=dSdU+force;
+
+    //    -    phi^dag V (Mdag M)^-1 Mdag dM   (Mdag M)^-1 V^dag  phi
+    //    -    phi^dag V (Mdag M)^-1 dMdag M   (Mdag M)^-1 V^dag  phi
+    DenOp.MDeriv(force,Y,X,DaggerNo);   dSdU=dSdU-force;
+    DenOp.MDeriv(force,X,Y,DaggerYes);  dSdU=dSdU-force;
+
+    dSdU *= -1.0;
+  };
+\end{verbatim}
+}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Pseudofermion code example }
+
+\link{https://github.com/paboyle/Grid/blob/develop/Grid/qcd/action/pseudofermion/TwoFlavourRatio.h}
+  {  \tiny
+\begin{verbatim}
+  virtual void refresh(const GaugeField &U, GridSerialRNG &sRNG, GridParallelRNG& pRNG) {
+
+    // P(phi) = e^{- phi^dag V (MdagM)^-1 Vdag phi}
+    //
+    // NumOp == V
+    // DenOp == M
+    //
+    // Take phi = Vdag^{-1} Mdag eta  ; eta = Mdag^{-1} Vdag Phi
+    //
+    // P(eta) = e^{- eta^dag eta}
+    //
+    // e^{x^2/2 sig^2} => sig^2 = 0.5.
+    // 
+    // So eta should be of width sig = 1/sqrt(2) and must multiply by 0.707....
+    //
+    RealD scale = std::sqrt(0.5);
+
+    FermionField eta(NumOp.FermionGrid());
+    FermionField tmp(NumOp.FermionGrid());
+
+    gaussian(pRNG,eta);
+
+    NumOp.ImportGauge(U);
+    DenOp.ImportGauge(U);
+
+    // Note: this hard codes normal equations type solvers; alternate implementation needed for 
+    // non-herm style solvers.
+    MdagMLinearOperator<FermionOperator<Impl> ,FermionField> MdagMOp(NumOp);
+
+    DenOp.Mdag(eta,Phi);            // Mdag eta
+    tmp = Zero();
+    ActionSolver(MdagMOp,Phi,tmp);  // (VdagV)^-1 Mdag eta = V^-1 Vdag^-1 Mdag eta
+    NumOp.M(tmp,Phi);               // Vdag^-1 Mdag eta
+
+    Phi=Phi*scale;
+	
+  };
+\end{verbatim}
+}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Even Odd preconditioning}
+\begin{itemize}
+\item We can write the Fermion determinant in terms of the red-black preconditioned operator
+$$
+M = \left(
+\begin{array}{cc}
+M_{ee} & M_{eo} \\
+M_{oe} & M_{oo}
+\end{array}
+\right)
+= 
+\left(
+\begin{array}{cc}
+1  &  0 \\
+M_{oe} M_{ee}^{-1}  & 1
+\end{array}
+\right)
+\left(
+\begin{array}{cc}
+M_{ee} & 0\\
+0 & M_{oo} - M_{oe}M_{ee}^{-1} M_{eo}
+\end{array}
+\right)
+\left(
+\begin{array}{cc}
+1 &  M_{ee}^{-1}M_{eo}\\
+0  & 1
+\end{array}
+\right),
+$$
+\item where the Schur complement, is written as $M_{pc} = M_{oo} - M_{oe}M_{ee}^{-1} M_{eo}$.
+\item $\det U = \det M = 1$ and so,
+$$
+\det M = \det M_pc \det M_{ee}
+$$
+\item Since the inverse of $M_{pc}^\dagger M_{pc}$ arises from a conjugate gradient solve (making the matrix HPD), 
+and $M_{pc}^{-dagger} = M_{pc} (M_{pc}^\dagger M)^{-1}$, we can use both red-black solvers and a single solve 
+in the force evaluation by using the Schur factored determinant in HMC.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Observables}
+
+Importance sampling has reduced:
+$$
+\langle {\cal O} \rangle = \frac{1}{Z} \int_U e^{-S_G[U]} {\cal O}(U) dU  \to \frac{1}{N} \sum\limits_i {\cal O}(U_i) 
+$$
+\begin{itemize}
+\item Zero momentum pion, kaon or B meson two point function
+  $$
+  \sum\limits_x \langle \bar u \gamma_0 \gamma_5 d (x,t) \bar d \gamma_0 \gamma_5 u (0,0) \rangle
+    = \frac{1}{N}\sum_i  {\rm trace}  \{ \gamma_0 \gamma_5 M^{-1}_d(x,t;0,0)\gamma_0 \gamma_5 M^{-1}_u(0,0;x,t) \}
+    $$
+\item Euclidean space $\propto A e^{- m t} $
+\item Tune bare mass until interacting meson mass is correct, prefactor gives pion, kaon, B meson decay constant
+\item etc.. 
+\end{itemize}
+  
+\end{frame}
+
+
 \begin{frame}[fragile]\small\frametitle{Exercise}
 
 \begin{itemize} 
 \item Quenched simulation for Gauge action of your choice
 \item Create a corresponding Grid HMC: cut down the Mobius DWF HMC as required
 \item Run it on your laptop on $8^4$ and check you get close to the same plaquette as literature results
+  \begin{itemize}
+    \item e.g. https://arxiv.org/pdf/hep-lat/0610075.pdf
+    \end{itemize}
 \item Check the Creutz relation: $<e^{-dH}> = 1$
 \item Save the gauge configurations for the next lecture(!)
 \end{itemize}
@@ -359,6 +567,29 @@ Examples:
 \link{https://github.com/paboyle/Grid/blob/develop/HMC/Mobius2p1fRHMC.cc}
 
 \link{https://github.com/paboyle/Grid/tree/develop/tests/hmc}
+
+\end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{Resources}
+
+\begin{itemize}
+\item \href{https://inspirehep.net/literature/254077}{\color{blue}Kennedy, Pendleton, Roweth, Duane HMC}
+\item \href{https://inspirehep.net/literature/31867}{\color{blue}Sexton-Weingarten}
+\item \href{https://inspirehep.net/literature/560630}{\color{blue}Hasenbusch determinant factoring}
+\item \href{https://inspirehep.net/literature/628174}{\color{blue}Kennedy, Clark RHMC}
+\end{itemize}
+
+Topics not covered:
+
+\begin{itemize}
+  \item Link smearing
+  \item Exact one flavor algorithm (DWF)
+  \item DDHMC
+  \item Multigrid setup in HMC and polynomial subspace prediction
+  \item Multishift solvers
+  \item Polynomial HMC
+\end{itemize}
 
 \end{frame}
 

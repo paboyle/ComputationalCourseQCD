@@ -188,6 +188,17 @@
 
     
   \end{frame}
+
+  \begin{frame}[fragile]\small\frametitle{ Hermitian case}
+    \begin{itemize}
+    \item Orthonormal basis for Krylov space with a simple, symmetric representation of $A$
+      $$
+       T_{ij} = \langle v_i | A | v_j \rangle      
+      $$
+    \item When A is Hermitian positive definite, $\langle X|A|Y\rangle$ is a perfectly good inner product
+    \end{itemize}
+    \includegraphics[width=.5\textwidth]{Tridiagonal.pdf}
+  \end{frame}  
   \begin{frame}[fragile]\small\frametitle{ Conjugate Gradients}
     \href{https://en.wikipedia.org/wiki/Conjugate_gradient_method}{{\color{blue}https://en.wikipedia.org/wiki/Conjugate\_gradient\_method}}
    \begin{itemize}
@@ -205,44 +216,45 @@
       \begin{column}{0.5\textwidth}
         {\miniscule
 \begin{verbatim}
-  void operator()(LinearOperatorBase<Field> &Linop, const Field &src, Field &psi) 
-  {
-    RealD cp, c, a, d, b, ssq, qq;
+template<class Field>
+void SimpleConjugateGradient(LinearOperatorBase<Field> &HPDop,const Field &b, Field &x)
+{
+    RealD cp, c, alpha, d, beta, ssq, qq;
+    Field p(b), mmp(b), r(b);
 
-    Field p(src), mmp(src), r(src);
-
-    Linop.HermOpAndNorm(psi, mmp, d, b);
+    HPDop.HermOpAndNorm(x, mmp, d, beta);
     
-    r = src - mmp;
+    r = b - mmp;
     p = r;
 
-    a = norm2(p);
-    cp = a;
-    ssq = norm2(src);
+    cp = alpha = norm2(p);
+    ssq = norm2(b);
 
     RealD rsq = Tolerance * Tolerance * ssq;
 
     for (int k = 1; k <= MaxIterations; k++) {
       c = cp;
 
-      Linop.HermOp(p, mmp);
+      HPDop.HermOp(p, mmp);
 
-      ComplexD dc  = innerProduct(p,mmp);
-      d = dc.real();
-      a = c / d;
+      d = real(innerProduct(p,mmp));
 
-      cp = axpy_norm(r, -a, mmp, r);
-      b = cp / c;
+      alpha = c / d;
 
-      psi = psi + a* p ;
-      p   = r   + b* p ;
+      r = r - alpha *mmp;
+      cp = norm2(r);
+      beta = cp / c;
 
+      x   = x   + alpha* p ;
+      p   = r   + beta* p ;
+
+      std::cout << "iteration "<<k<<" cp " <<std::sqrt(cp/ssq) << std::endl;
       if (cp <= rsq) {
         return;
       }
     }
     assert(0);
-  }
+}
   \end{verbatim}
           }
       \end{column}
