@@ -106,10 +106,9 @@
   {\color{red} Peter Boyle} (BNL, Edinburgh)
 
   \begin{itemize}
-  \item Fermion actions 
-  \item Sources and hadronic correlation functions
-  \item Meson two point functions
-  \item Meson three point functions
+  \item Walk through an example code: u/d/s/c Meson spectrum
+  \item Under 300 lines of code
+  \item How to make Point, Z2, Gaussian, Sequential propagators
   \item Final words
   \end{itemize}
 
@@ -117,19 +116,378 @@
 
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{ Fermion actions }
+
+\begin{frame}[fragile]\small\frametitle{Observables}
+
+Importance sampling has reduced:
+$$
+\langle {\cal O} \rangle = \frac{1}{Z} \int_U e^{-S_G[U]} {\cal O}(U) dU  \to \frac{1}{N} \sum\limits_i {\cal O}(U_i) 
+$$
+\begin{itemize}
+\item Zero momentum pion, kaon or B meson two point function
+  $$
+  \sum\limits_x \langle \bar u \gamma_0 \gamma_5 d (x,t) \bar d \gamma_0 \gamma_5 u (0,0) \rangle
+    = \frac{1}{N}\sum_i  {\rm trace}  \{ \gamma_0 \gamma_5 M^{-1}_d(x,t;0,0)\gamma_0 \gamma_5 M^{-1}_u(0,0;x,t) \}
+    $$
+\item Euclidean space $\propto A e^{- m t} $
+\item Tune bare mass until interacting meson mass is correct, prefactor gives pion, kaon, B meson decay constant
+\item etc.. 
+\end{itemize}
+  
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{ Sources and hadronic correlation functions }
+\begin{frame}[fragile]\small\frametitle{ Hadronic observables}
+  \begin{itemize}
+    \item Many ways to use Grid to assemble Hadronic observables
+    \item Hadrons \link{https://github.com/aportelli/Hadrons}
+    \item GPT \link{https://github.com/clehner/gpt}
+    \item As a library (e.g. CPS, MILC, Chris Kelly)
+    \item Write your own?
+  \begin{itemize}
+  \item to add {\bf new} functionaly to any of the above, it is necessary to know how to write in Grid
+  \item developing simple code is a useful base
+  \end{itemize}
+  \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{ Meson two point functions }
+\begin{frame}[fragile]\small\frametitle{ Example code}
+  \begin{itemize}
+    \item Developed in Grid in about 6h, Mon 30th Aug
+    \item Only loosely tested: intended to be illustrative
+  \end{itemize}
+  \href{https://github.com/paboyle/Grid/blob/develop/examples/Example_Mobius_spectrum.cc}
+  {\color{blue}https://github.com/paboyle/Grid/blob/develop/examples/Example\_Mobius\_spectrum.cc}
+{\tiny
+\begin{verbatim}
+  template<class Gimpl,class Field> class CovariantLaplacianCshift : public SparseMatrixBase<Field>
+  template<class Field> void GaussianSmear(LatticeGaugeField &U,Field &unsmeared,Field &smeared);
+  void PointSource(Coordinate &coor,LatticePropagator &source);
+  void Z2WallSource(GridParallelRNG &RNG,int tslice,LatticePropagator &source);
+  void GaussianSource(Coordinate &site,LatticeGaugeField &U,LatticePropagator &source);
+  void GaussianWallSource(GridParallelRNG &RNG,int tslice,LatticeGaugeField &U,LatticePropagator &source);
+  void SequentialSource(int tslice,Coordinate &mom,LatticePropagator &spectator,LatticePropagator &source);
+  void MakePhase(Coordinate mom,LatticeComplex &phase);
+  template<class Action> void Solve(Action &D,LatticePropagator &source,LatticePropagator &propagator);
+  void MesonTrace(std::string file,LatticePropagator &q1,LatticePropagator &q2,LatticeComplex &phase)
+\end{verbatim}
+}  
+
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Gist of the programme }
+{\tiny
+\begin{verbatim}
+  LatticePropagator point_source(UGrid);
+  LatticePropagator wall_source(UGrid);
+  LatticePropagator gaussian_source(UGrid);
+
+  Coordinate Origin({0,0,0,0});
+  PointSource   (Origin,point_source);
+  Z2WallSource  (RNG4,0,wall_source);
+  GaussianSource(Origin,Umu,gaussian_source);
+  
+  std::vector<LatticePropagator> PointProps(nmass,UGrid);
+  std::vector<LatticePropagator> GaussProps(nmass,UGrid);
+  std::vector<LatticePropagator> Z2Props   (nmass,UGrid);
+
+  for(int m=0;m<nmass;m++) {
+    
+    Solve(*FermActs[m],point_source   ,PointProps[m]);
+    Solve(*FermActs[m],gaussian_source,GaussProps[m]);
+    Solve(*FermActs[m],wall_source    ,Z2Props[m]);
+  
+  }
+
+  LatticeComplex phase(UGrid);
+  Coordinate mom({0,0,0,0});
+  MakePhase(mom,phase);
+  
+  for(int m1=0 ;m1<nmass;m1++) {
+  for(int m2=m1;m2<nmass;m2++) {
+    std::stringstream ssp,ssg,ssz;
+
+    ssp<<config<< "_m" << m1 << "_m"<< m2 << "_point_meson.xml";
+    ssg<<config<< "_m" << m1 << "_m"<< m2 << "_smeared_meson.xml";
+    ssz<<config<< "_m" << m1 << "_m"<< m2 << "_wall_meson.xml";
+
+    MesonTrace(ssp.str(),PointProps[m1],PointProps[m2],phase);
+    MesonTrace(ssg.str(),GaussProps[m1],GaussProps[m2],phase);
+    MesonTrace(ssz.str(),Z2Props[m1],Z2Props[m2],phase);
+  }}
+\end{verbatim}
+}  
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Loading a configuration}
+  
+{\tiny
+\begin{verbatim}
+  LatticeGaugeField Umu(UGrid);
+  std::string config;
+  if( argc > 1 && argv[1][0] != '-' )
+  {
+    std::cout<<GridLogMessage <<"Loading configuration from "<<argv[1]<<std::endl;
+    FieldMetaData header;
+    NerscIO::readConfiguration(Umu, header, argv[1]);
+    config=argv[1];
+  }
+  else
+  {
+    std::cout<<GridLogMessage <<"Using hot configuration"<<std::endl;
+    SU<Nc>::ColdConfiguration(Umu);
+    //    SU<Nc>::HotConfiguration(RNG4,Umu);
+    config="ColdConfig";
+  }
+\end{verbatim}
+}
+\begin{itemize}
+  \item SciDAC/ILDG and Binary formats too
+  \item MPI2IO is used
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Fermion action}
+
+{\tiny
+\begin{verbatim}
+  std::vector<RealD> masses({ 0.03,0.04,0.45} ); // u/d, s, c ??
+
+  int nmass = masses.size();
+
+  std::vector<MobiusFermionR *> FermActs;
+  
+  std::cout<<GridLogMessage <<"======================"<<std::endl;
+  std::cout<<GridLogMessage <<"MobiusFermion action as Scaled Shamir kernel"<<std::endl;
+  std::cout<<GridLogMessage <<"======================"<<std::endl;
+
+  for(auto mass: masses) {
+
+    RealD M5=1.0;
+    RealD b=1.5;// Scale factor b+c=2, b-c=1
+    RealD c=0.5;
+    
+    FermActs.push_back(new MobiusFermionR(Umu,*FGrid,*FrbGrid,*UGrid,*UrbGrid,mass,M5,b,c));
+   
+  }
+\end{verbatim}
+}
+\begin{itemize}
+\item Wilson, Clover, Twisted mass, Staggered, other chiral fermions similar
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{Red Black Solver}
+
+{\tiny
+\begin{verbatim}
+template<class Action>
+void Solve(Action &D,LatticePropagator &source,LatticePropagator &propagator)
+{
+  GridBase *UGrid = D.GaugeGrid();
+  GridBase *FGrid = D.FermionGrid();
+
+  LatticeFermion src4  (UGrid); 
+  LatticeFermion src5  (FGrid); 
+  LatticeFermion result5(FGrid);
+  LatticeFermion result4(UGrid);
+  
+  ConjugateGradient<LatticeFermion> CG(1.0e-8,100000);
+  SchurRedBlackDiagMooeeSolve<LatticeFermion> schur(CG);
+  ZeroGuesser<LatticeFermion> ZG; // Could be a DeflatedGuesser if have eigenvectors
+  for(int s=0;s<Nd;s++){
+    for(int c=0;c<Nc;c++){
+      PropToFerm<Action>(src4,source,s,c);
+
+      D.ImportPhysicalFermionSource(src4,src5);
+
+      result5=Zero();
+      schur(D,src5,result5,ZG);
+      std::cout<<GridLogMessage
+	       <<"spin "<<s<<" color "<<c
+	       <<" norm2(src5d) "   <<norm2(src5)
+               <<" norm2(result5d) "<<norm2(result5)<<std::endl;
+
+      D.ExportPhysicalFermionSolution(result5,result4);
+
+      FermToProp<Action>(propagator,result4,s,c);
+    }
+  }
+}
+\end{verbatim}
+}  
+\begin{itemize}
+\item Interface works for both 4d and 5d fermion types
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Sources  }
+
+{\tiny
+\begin{verbatim}
+void PointSource(Coordinate &coor,LatticePropagator &source)
+{
+  source=Zero();
+  SpinColourMatrix kronecker; kronecker=1.0;
+  pokeSite(kronecker,source,coor);
+}
+void Z2WallSource(GridParallelRNG &RNG,int tslice,LatticePropagator &source)
+{
+  GridBase *grid = source.Grid();
+  LatticeComplex noise(grid);
+  LatticeComplex zz(grid); zz=Zero();
+  LatticeInteger t(grid);
+
+  RealD nrm=1.0/sqrt(2);
+  bernoulli(RNG, noise); // 0,1 50:50
+
+  noise = (2.*noise - Complex(1,1))*nrm;
+
+  LatticeCoordinate(t,Tdir);
+  noise = where(t==Integer(tslice), noise, zz);
+
+  source = 1.0;
+  source = source*noise;
+}
+\end{verbatim}
+}  
+
+\end{frame}
+
+
+\begin{frame}[fragile]\small\frametitle{ Smearing }
+  \begin{itemize}
+    \item Reuse the smearing we developed in earlier lectures!
+  \end{itemize}
+
+{\tiny
+\begin{verbatim}
+template<class Field>
+void GaussianSmear(LatticeGaugeField &U,Field &unsmeared,Field &smeared)
+{
+  typedef CovariantLaplacianCshift <PeriodicGimplR,Field> Laplacian_t;
+  Laplacian_t Laplacian(U);
+
+  Integer Iterations = 40;
+  Real width = 2.0;
+  Real coeff = (width*width) / Real(4*Iterations);
+
+  Field tmp(U.Grid());
+  smeared=unsmeared;
+  //  chi = (1-p^2/2N)^N kronecker
+  for(int n = 0; n < Iterations; ++n) {
+    Laplacian.M(smeared,tmp);
+    smeared = smeared - coeff*tmp;
+  }
+}
+void GaussianSource(Coordinate &site,LatticeGaugeField &U,LatticePropagator &source)
+{
+  LatticePropagator tmp(source.Grid());
+  PointSource(site,source);
+  std::cout << " GaussianSource Kronecker "<< norm2(source)<<std::endl;
+  tmp = source;
+  GaussianSmear(U,tmp,source);
+  std::cout << " GaussianSource Smeared "<< norm2(source)<<std::endl;
+}
+void GaussianWallSource(GridParallelRNG &RNG,int tslice,LatticeGaugeField &U,LatticePropagator &source)
+{
+  Z2WallSource(RNG,tslice,source);
+  auto tmp = source;
+  GaussianSmear(U,tmp,source);
+}
+\end{verbatim}
+}  
 \end{frame}
 
 \begin{frame}[fragile]\small\frametitle{ Meson three point functions }
+
+  \begin{itemize}
+    \item Use sequential source approach; contract an extended propagator via standard meson contraction
+    \end{itemize}
+{\tiny
+\begin{verbatim}
+void SequentialSource(int tslice,Coordinate &mom,LatticePropagator &spectator,LatticePropagator &source)
+{
+  assert(mom.size()==Nd);
+  assert(mom[Tdir] == 0);
+
+  GridBase * grid = spectator.Grid();
+  Gamma G5(Gamma::Algebra::Gamma5);
+
+  LatticeInteger ts(grid);
+  LatticeCoordinate(ts,Tdir);
+  source = Zero();
+  source = where(ts==Integer(tslice),spectator,source); // Stick in a slice of the spectator, zero everywhere else
+
+  LatticeComplex phase(grid);
+  MakePhase(mom,phase);
+
+  source = G5*source *phase;
+}
+\end{verbatim}
+}  
+
 \end{frame}
 
-\begin{frame}[fragile]\small\frametitle{ Ward identities }
+\begin{frame}[fragile]\small\frametitle{ Contractions }
+{\miniscule
+\begin{verbatim}
+class MesonFile: Serializable {
+public:
+  GRID_SERIALIZABLE_CLASS_MEMBERS(MesonFile, std::vector<std::vector<Complex> >, data);
+};
+
+void MesonTrace(std::string file,LatticePropagator &q1,LatticePropagator &q2,LatticeComplex &phase)
+{
+  const int nchannel=4;
+  Gamma::Algebra Gammas[nchannel][2] = {
+    {Gamma::Algebra::Gamma5      ,Gamma::Algebra::Gamma5},
+    {Gamma::Algebra::GammaTGamma5,Gamma::Algebra::GammaTGamma5},
+    {Gamma::Algebra::GammaTGamma5,Gamma::Algebra::Gamma5},
+    {Gamma::Algebra::Gamma5      ,Gamma::Algebra::GammaTGamma5}
+  };
+
+  Gamma G5(Gamma::Algebra::Gamma5);
+
+  LatticeComplex meson_CF(q1.Grid());
+  MesonFile MF;
+
+  for(int ch=0;ch<nchannel;ch++){
+
+    Gamma Gsrc(Gammas[ch][0]);
+    Gamma Gsnk(Gammas[ch][1]);
+
+    meson_CF = trace(G5*adj(q1)*G5*Gsnk*q2*adj(Gsrc));
+
+    std::vector<TComplex> meson_T;
+    sliceSum(meson_CF,meson_T, Tdir);
+
+    int nt=meson_T.size();
+
+    std::vector<Complex> corr(nt);
+    for(int t=0;t<nt;t++){
+      corr[t] = TensorRemove(meson_T[t]); // Yes this is ugly, not figured a work around
+      std::cout << " channel "<<ch<<" t "<<t<<" " <<corr[t]<<std::endl;
+    }
+    MF.data.push_back(corr);
+  }
+
+  {
+    XmlWriter WR(file);
+    write(WR,"MesonFile",MF);
+  }
+}
+\end{verbatim}
+}  
+\end{frame}
+
+\begin{frame}[fragile]\small\frametitle{ Hadrons}
+
+  \begin{itemize}
+  \item Connects many of these ideas and more in reusable modules
+  \item Connect outputs to inputs in dataflow style programming/graphs
+  \end{itemize}
+\begin{center} \link{https://github.com/aportelli/Hadrons/tree/develop/Hadrons/Modules}\end{center}
+\includegraphics[width=0.5\textwidth]{HadronsModules.pdf}
 \end{frame}
 
 \begin{frame}[fragile]\small\frametitle{ Final words }
